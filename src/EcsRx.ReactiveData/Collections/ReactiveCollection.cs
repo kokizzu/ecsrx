@@ -36,7 +36,7 @@ namespace EcsRx.ReactiveData.Collections
             : base(list != null ? new List<T>(list) : null)
         {
         }
-
+        
         protected override void ClearItems()
         {
             var beforeCount = Count;
@@ -53,13 +53,27 @@ namespace EcsRx.ReactiveData.Collections
         {
             base.InsertItem(index, item);
 
-            if (collectionAdd != null) collectionAdd.OnNext(new CollectionAddEvent<T>(index, item));
-            if (countChanged != null) countChanged.OnNext(Count);
+            collectionAdd?.OnNext(new CollectionAddEvent<T>(index, item));
+            countChanged?.OnNext(Count);
         }
 
         public void Move(int oldIndex, int newIndex)
         {
             MoveItem(oldIndex, newIndex);
+        }
+
+        public new void Add(T item)
+        {
+            var lastIndex = Count;
+            base.Add(item);
+            collectionAdd?.OnNext(new CollectionAddEvent<T>(lastIndex, item));
+            countChanged?.OnNext(Count);
+        }
+
+        public new void Remove(T item)
+        {
+            var indexOfItem = IndexOf(item);
+            RemoveItem(indexOfItem);
         }
 
         protected virtual void MoveItem(int oldIndex, int newIndex)
@@ -87,7 +101,6 @@ namespace EcsRx.ReactiveData.Collections
 
             if (collectionReplace != null) collectionReplace.OnNext(new CollectionReplaceEvent<T>(index, oldItem, item));
         }
-
 
         [NonSerialized]
         Subject<int> countChanged = null;
